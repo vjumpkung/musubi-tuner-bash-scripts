@@ -17,7 +17,7 @@ save_every_n_epochs=1
 task="t2v-14B" # t2v-1.3B, t2v-14B, i2v-14B, t2i-14B
 
 # load diffusion model, text encoders and vae
-dit="./models/diffusion_models/wan2.1_t2v_14B_bf16.safetensors" # wan diffusion model
+dit="./models/diffusion_models/wan2.1_t2v_14B_bf16.safetensors" # wan diffusion model (can use fp8 version too)
 vae="./models/vae/wan_2.1_vae.safetensors" # wan vae 
 t5="./models/text_encoders/models_t5_umt5-xxl-enc-bf16.pth" # maybe check with safetensors version
 
@@ -28,7 +28,7 @@ network_alpha=8
 # network_args= # using with lora_plus
 
 # setting optimizer
-optimizer_type="adamw8bit" # adamw, adamw8bit, lion, lion8bit, schedulefree, pytorch_optimizer...
+optimizer_type="adamw8bit" # adamw, adamw8bit others optimizer should install library manually
 # optimizer_args="weight_decay=0.01 eps=1e-7" 
 
 # setting leraning rate
@@ -49,7 +49,7 @@ mixed_precision="bf16"
 # using fp8_e4m3fn instead of fp16
 fp8_base=true
 
-# VRAM 48 GB comment, VRAM 24 GB use 1, VRAM 16 GB use 22, VRAM 8 GB maybe 40 (not test yet)
+# reduce vram usage (vram 16 GB recommended 22)
 blocks_to_swap=1
 
 # advanced settings (If you know what is this then uncomment in each args)
@@ -80,8 +80,8 @@ extra_args=""
 
 # Build command line arguments DON'T TOUCH
 args=()
-
 # Add string arguments
+[[ -n "$dataset_config" ]] && args+=("--dataset_config" "$dataset_config")
 [[ -n "$output_name" ]] && args+=("--output_name" "$output_name")
 [[ -n "$output_dir" ]] && args+=("--output_dir" "$output_dir")
 [[ -n "$task" ]] && args+=("--task" "$task")
@@ -91,7 +91,6 @@ args=()
 [[ -n "$lr_scheduler" ]] && args+=("--lr_scheduler" "$lr_scheduler")
 [[ -n "$mixed_precision" ]] && args+=("--mixed_precision" "$mixed_precision")
 [[ -n "$timestep_sampling" ]] && args+=("--timestep_sampling" "$timestep_sampling")
-[[ -n "$huggingface_repo_visibility" ]] && args+=("--huggingface_repo_visibility" "$huggingface_repo_visibility")
 
 # Add numeric arguments
 [[ -n "$max_train_epochs" ]] && args+=("--max_train_epochs" "$max_train_epochs")
@@ -107,7 +106,6 @@ args=()
 [[ -n "$discrete_flow_shift" ]] && args+=("--discrete_flow_shift" "$discrete_flow_shift")
 [[ -n "$seed" ]] && args+=("--seed" "$seed")
 [[ -n "$max_data_loader_n_workers" ]] && args+=("--max_data_loader_n_workers" "$max_data_loader_n_workers")
-[[ -n "$cache_text_encoder_batch_size" ]] && args+=("--cache_text_encoder_batch_size" "$cache_text_encoder_batch_size")
 [[ -n "$extra_args" ]] && args+=("$extra_args")
 
 # Handle array arguments (network_args and optimizer_args)
@@ -136,6 +134,7 @@ fi
 [[ -n "$huggingface_repo_type" ]] && args+=("--huggingface_repo_type" "$huggingface_repo_type")
 [[ -n "$huggingface_path_in_repo" ]] && args+=("--huggingface_path_in_repo" "$huggingface_path_in_repo")
 [[ -n "$huggingface_token" ]] && args+=("--huggingface_token" "$huggingface_token")
+[[ -n "$huggingface_repo_visibility" ]] && args+=("--huggingface_repo_visibility" "$huggingface_repo_visibility")
 
 # Echo the arguments
 
@@ -143,4 +142,4 @@ python ${MUSUBI_TUNER_PATH}/wan_cache_latents.py --dataset_config $dataset_confi
 
 python ${MUSUBI_TUNER_PATH}/wan_cache_text_encoder_outputs.py --dataset_config $dataset_config --t5 $t5 --batch_size $cache_text_encoder_batch_size
 
-accelerate launch --num_cpu_threads_per_process 1 --mixed_precision $mixed_precision ${MUSUBI_TUNER_PATH}/wan_train_network.py "${args[@]}"
+accelerate launch --num_cpu_threads_per_process 1 --mixed_precision $mixed_precision ${MUSUBI_TUNER_PATH}/wan_train_network.py ${args[@]}
