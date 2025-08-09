@@ -16,9 +16,9 @@ save_every_n_epochs=1
 
 # load diffusion model, text encoders and vae
 dit="./models/diffusion_models/flux1-kontext-dev-fp8-e4m3fn.safetensors" # diffusion model (can use fp8 version too)
-te1="./models/text_encoders/clip_l.safetensors" # clip-l
-te2="./models/text_encoders/t5xxl_fp8_e4m3fn.safetensors" # t5xxl
-vae="./models/text_encoders/ae.safetensors" # vae
+te1="./models/text_encoders/t5xxl_fp8_e4m3fn.safetensors" # t5xxl
+te2="./models/text_encoders/clip_l.safetensors" # clip-l
+vae="./models/vae/ae.safetensors" # vae
 
 # network settings
 network_module="networks.lora_flux"
