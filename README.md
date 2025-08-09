@@ -2,10 +2,14 @@
 
 (for people who dont know which args should be pass)
 
+- using with https://github.com/kohya-ss/musubi-tuner
+
 ## Instruction
 
-- recommended to copy this script for each projct
+- recommended to copy this script for each project
 
-## Why not have GUI for at this moment
+## Q&A?
 
-- Don't have time and Musubi Tuner Still Don't have any up to date GUI yet
+### Why not have GUI for at this moment
+
+- Musubi Tuner update very fast so GUI still unavailable at this moment.
