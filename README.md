@@ -1,4 +1,6 @@
-# 🤔
+# Musubi Tuner Bash Script
+
+(for people who dont know which args should be pass)
 
 ## Instruction
 

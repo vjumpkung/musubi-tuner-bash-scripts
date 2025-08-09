@@ -14,15 +14,14 @@ output_dir="./lora_training/outputs"
 max_train_epochs=10
 save_every_n_epochs=1
 
-task="t2v-14B" # t2v-1.3B, t2v-14B, i2v-14B, t2i-14B
-
 # load diffusion model, text encoders and vae
-dit="./models/diffusion_models/wan2.1_t2v_14B_bf16.safetensors" # wan diffusion model (can use fp8 version too)
-vae="./models/vae/wan_2.1_vae.safetensors" # wan vae 
-t5="./models/text_encoders/models_t5_umt5-xxl-enc-bf16.pth" # maybe check with safetensors version
+dit="./models/diffusion_models/flux1-kontext-dev-fp8-e4m3fn.safetensors" # diffusion model (can use fp8 version too)
+te1="./models/text_encoders/clip_l.safetensors" # clip-l
+te2="./models/text_encoders/t5xxl_fp8_e4m3fn.safetensors" # t5xxl
+vae="./models/text_encoders/ae.safetensors" # vae
 
 # network settings
-network_module="networks.lora_wan"
+network_module="networks.lora_flux"
 network_dim=8
 network_alpha=8
 # network_args= # using with lora_plus
@@ -50,19 +49,17 @@ mixed_precision="bf16"
 fp8_base=true
 
 # reduce vram usage (vram 16 GB recommended 22)
-blocks_to_swap=1
+blocks_to_swap=0
 
 # advanced settings (If you know what is this then uncomment in each args)
 # save_state=true
-timestep_sampling="shift"
+timestep_sampling="flux_shift"
+weighting_scheme="none"
 discrete_flow_shift=1.0
 gradient_checkpointing=true
-guidance_scale=1.0
 seed=42
 persistent_data_loader_workers=true
 max_data_loader_n_workers=2 # for faster dataset loading
-
-# attention (select sdpa or xformers)
 sdpa=true
 # xformers=true 
 
@@ -89,11 +86,13 @@ args=()
 [[ -n "$output_dir" ]] && args+=("--output_dir" "$output_dir")
 [[ -n "$task" ]] && args+=("--task" "$task")
 [[ -n "$dit" ]] && args+=("--dit" "$dit")
+[[ -n "$vae" ]] && args+=("--vae" "$vae")
 [[ -n "$network_module" ]] && args+=("--network_module" "$network_module")
 [[ -n "$optimizer_type" ]] && args+=("--optimizer_type" "$optimizer_type")
 [[ -n "$lr_scheduler" ]] && args+=("--lr_scheduler" "$lr_scheduler")
 [[ -n "$mixed_precision" ]] && args+=("--mixed_precision" "$mixed_precision")
 [[ -n "$timestep_sampling" ]] && args+=("--timestep_sampling" "$timestep_sampling")
+[[ -n "$weighting_scheme" ]] && args+=("--weighting_scheme" "$weighting_scheme")
 
 # Add numeric arguments
 [[ -n "$max_train_epochs" ]] && args+=("--max_train_epochs" "$max_train_epochs")
@@ -109,7 +108,6 @@ args=()
 [[ -n "$discrete_flow_shift" ]] && args+=("--discrete_flow_shift" "$discrete_flow_shift")
 [[ -n "$seed" ]] && args+=("--seed" "$seed")
 [[ -n "$max_data_loader_n_workers" ]] && args+=("--max_data_loader_n_workers" "$max_data_loader_n_workers")
-[[ -n "$guidance_scale" ]] && args+=("--guidance_scale" "$guidance_scale")
 
 # Handle array arguments (network_args and optimizer_args)
 if [[ ${#network_args[@]} -gt 0 ]]; then
@@ -147,8 +145,8 @@ fi
 
 # Echo the arguments
 
-python ${MUSUBI_TUNER_PATH}/wan_cache_latents.py --dataset_config $dataset_config --vae $vae
+python ${MUSUBI_TUNER_PATH}/flux_kontext_cache_latents.py --dataset_config $dataset_config --vae $vae
 
-python ${MUSUBI_TUNER_PATH}/wan_cache_text_encoder_outputs.py --dataset_config $dataset_config --t5 $t5 --batch_size $cache_text_encoder_batch_size
+python ${MUSUBI_TUNER_PATH}/flux_kontext_cache_text_encoder_outputs.py --dataset_config $dataset_config --text_encoder1 $te1 --text_encoder2 $te2 --batch_size $cache_text_encoder_batch_size
 
-accelerate launch --dynamo_backend no --dynamo_mode default --mixed_precision $mixed_precision --num_processes 1 --num_machines 1 --num_cpu_threads_per_process 2 ${MUSUBI_TUNER_PATH}/wan_train_network.py ${args[@]}
+accelerate launch --dynamo_backend no --dynamo_mode default --mixed_precision $mixed_precision --num_processes 1 --num_machines 1 --num_cpu_threads_per_process 2 ${MUSUBI_TUNER_PATH}/flux_kontext_train_network.py ${args[@]}
